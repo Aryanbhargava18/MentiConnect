@@ -12,8 +12,8 @@ const generateToken = (id) => {
 // @route   GET /auth/github/callback
 exports.githubCallback = (req, res) => {
     const token = generateToken(req.user._id);
-    // Redirect to frontend with token in URL
-    res.redirect(`${process.env.FRONTEND_URL}/dashboard?token=${token}`);
+    // Redirect to frontend auth callback page with token in URL
+    res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${token}`);
 };
 
 // @desc    Logout user (clear GitHub token)

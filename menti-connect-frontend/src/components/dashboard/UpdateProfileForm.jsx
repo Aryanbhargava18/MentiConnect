@@ -40,7 +40,12 @@ const UpdateProfileForm = () => {
     try {
       const response = await apiClient.put('/api/users/me', formData);
       updateUser(response.data);
-      setMessage('Profile updated successfully!');
+      setMessage('Profile updated successfully! Redirecting to discover matches...');
+      
+      // Redirect to discover page after successful update
+      setTimeout(() => {
+        window.location.href = '/discover';
+      }, 1500);
     } catch (error) {
       console.error('Error updating profile:', error);
       if (error.response?.status === 401) {
@@ -132,6 +137,20 @@ const UpdateProfileForm = () => {
                 : 'bg-green-100 text-green-700'
             }`}>
               {message}
+              {message.includes('successfully') && (
+                <div className="mt-2 text-sm">
+                  🎉 Your profile is complete! Let's find your perfect match...
+                  <div className="mt-2">
+                    <button
+                      type="button"
+                      onClick={() => window.location.href = '/discover'}
+                      className="text-blue-600 hover:text-blue-800 underline text-sm"
+                    >
+                      Start discovering matches →
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

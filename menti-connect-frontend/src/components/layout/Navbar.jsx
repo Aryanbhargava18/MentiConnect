@@ -1,15 +1,34 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { Button } from '../ui/button';
 import { Github, User, LogOut, Menu, X } from 'lucide-react';
 
 const Navbar = () => {
   const { user, logout, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const handleLogout = () => {
-    logout();
-    window.location.href = '/';
+  const handleLogout = async () => {
+    console.log('Logout button clicked');
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      console.log('Logout successful, redirecting to home');
+      // Small delay to ensure logout completes
+      setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 100);
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still redirect even if logout fails
+      setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 100);
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   const handleGitHubLogin = () => {
@@ -46,10 +65,11 @@ const Navbar = () => {
                     variant="outline"
                     size="sm"
                     onClick={handleLogout}
+                    disabled={isLoggingOut}
                     className="flex items-center space-x-1"
                   >
                     <LogOut className="h-4 w-4" />
-                    <span>Logout</span>
+                    <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
                   </Button>
                 </div>
               </>
@@ -96,10 +116,11 @@ const Navbar = () => {
                     variant="outline"
                     size="sm"
                     onClick={handleLogout}
+                    disabled={isLoggingOut}
                     className="w-full justify-start"
                   >
                     <LogOut className="h-4 w-4 mr-2" />
-                    Logout
+                    {isLoggingOut ? 'Logging out...' : 'Logout'}
                   </Button>
                 </div>
               ) : (

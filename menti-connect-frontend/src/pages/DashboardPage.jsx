@@ -5,13 +5,22 @@ import ProfileCard from '../components/dashboard/ProfileCard';
 import UpdateProfileForm from '../components/dashboard/UpdateProfileForm';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Users, Github, UserCheck, UserX, RefreshCw } from 'lucide-react';
+import { Users, Github } from 'lucide-react';
 
 const DashboardPage = () => {
-  const { user, login } = useAuth();
-  const [matches, setMatches] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const { user, login, loading } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
+  
+  // Debug logging
+  console.log('DashboardPage render:', { user, loading });
+  
+  // Check if user needs to complete profile setup
+  const needsProfileSetup = !user?.role || !user?.skills || user?.skills?.length === 0;
+  
+  // Determine user type and what they're looking for
+  const isMentor = user?.role === 'mentor' || user?.role === 'both';
+  const isMentee = user?.role === 'mentee' || user?.role === 'both';
+  const lookingFor = isMentor && isMentee ? 'both' : isMentor ? 'mentees' : 'mentors';
 
   // Handle token from URL (GitHub OAuth callback) - only if not already authenticated
   useEffect(() => {
@@ -41,57 +50,65 @@ const DashboardPage = () => {
     }
   }, [user, login]);
 
-  const fetchMatches = async () => {
-    setLoading(true);
-    try {
-      const response = await apiClient.get('/api/matches');
-      setMatches(response.data);
-    } catch (error) {
-      console.error('Error fetching matches:', error);
-      if (error.response?.status === 401) {
-        // Token expired or GitHub access revoked, redirect to login
-        if (error.response?.data?.code === 'GITHUB_TOKEN_INVALID') {
-          alert('Your GitHub access has been revoked. Please re-authenticate.');
-        }
-        window.location.href = '/';
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Show loading state while authentication is being checked
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const handleAcceptMatch = async (matchId) => {
-    try {
-      await apiClient.post(`/api/matches/accept/${matchId}`);
-      fetchMatches(); // Refresh matches
-    } catch (error) {
-      console.error('Error accepting match:', error);
-    }
-  };
-
-  const handleRejectMatch = async (matchId) => {
-    try {
-      await apiClient.post(`/api/matches/reject/${matchId}`);
-      fetchMatches(); // Refresh matches
-    } catch (error) {
-      console.error('Error rejecting match:', error);
-    }
-  };
-
-  useEffect(() => {
-    fetchMatches();
-  }, []);
+  // Show error state if no user data and not loading
+  if (!loading && !user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Authentication Error</h1>
+          <p className="text-gray-600 mb-4">Unable to load user data. Please try logging in again.</p>
+          <Button onClick={() => window.location.href = '/'}>
+            Go to Login
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome back, {user?.username}!
+            Welcome{needsProfileSetup ? '' : ' back'}, {user?.username}!
           </h1>
           <p className="text-gray-600">
-            Manage your profile and discover new connections.
+            {needsProfileSetup 
+              ? 'Complete your profile to start connecting with mentors and mentees.'
+              : `You're a ${user?.role} looking for ${lookingFor}. Let's find your perfect match!`
+            }
           </p>
+          {needsProfileSetup && (
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-blue-800 text-sm">
+                <strong>Quick Setup:</strong> Choose your role, add your skills, and set your availability to get started with MentiConnect!
+              </p>
+            </div>
+          )}
+          {!needsProfileSetup && (
+            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-green-800 text-sm">
+                <strong>Ready to connect!</strong> {isMentor && isMentee 
+                  ? 'As both mentor and mentee, you can find mentors to learn from and mentees to help.'
+                  : isMentor 
+                    ? 'Find mentees who need your expertise and guidance.'
+                    : 'Find mentors who can help you grow and learn new skills.'
+                }
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Tab Navigation */}
@@ -106,18 +123,43 @@ const DashboardPage = () => {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                Profile
+                Profile {needsProfileSetup && <span className="ml-1 text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full">!</span>}
               </button>
               <button
-                onClick={() => setActiveTab('matches')}
+                onClick={() => window.location.href = '/discover'}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'matches'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
+                disabled={needsProfileSetup}
               >
-                Matches ({matches.length})
+                Discover {lookingFor} {needsProfileSetup && <span className="ml-1 text-xs text-gray-400">(Complete profile first)</span>}
               </button>
+              {isMentor && (
+                <button
+                  onClick={() => setActiveTab('mentees')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'mentees'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                  disabled={needsProfileSetup}
+                >
+                  My Mentees {needsProfileSetup && <span className="ml-1 text-xs text-gray-400">(Complete profile first)</span>}
+                </button>
+              )}
+              {isMentee && (
+                <button
+                  onClick={() => setActiveTab('mentors')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'mentors'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                  disabled={needsProfileSetup}
+                >
+                  My Mentors {needsProfileSetup && <span className="ml-1 text-xs text-gray-400">(Complete profile first)</span>}
+                </button>
+              )}
             </nav>
           </div>
         </div>
@@ -131,95 +173,48 @@ const DashboardPage = () => {
             </div>
           )}
 
-          {/* Matches Section */}
-          {activeTab === 'matches' && (
+
+          {/* Mentees Section - For Mentors */}
+          {activeTab === 'mentees' && isMentor && (
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center space-x-2">
-                      <Users className="h-5 w-5" />
-                      <span>Potential Matches</span>
-                    </CardTitle>
-                    <Button
-                      onClick={fetchMatches}
-                      disabled={loading}
-                      variant="outline"
-                      size="sm"
-                    >
-                      <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                      Refresh
-                    </Button>
-                  </div>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Users className="h-5 w-5" />
+                    <span>My Mentees</span>
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {loading ? (
-                    <div className="text-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                      <p className="mt-2 text-gray-600">Loading matches...</p>
-                    </div>
-                  ) : matches.length === 0 ? (
-                    <div className="text-center py-8">
-                      <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600">No matches found at the moment.</p>
-                      <p className="text-sm text-gray-500 mt-2">
-                        Complete your profile to get better matches!
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {matches.map((match) => (
-                        <Card key={match._id} className="p-4">
-                          <div className="flex items-start space-x-4">
-                            <img
-                              src={match.avatarUrl}
-                              alt={match.username}
-                              className="h-12 w-12 rounded-full"
-                            />
-                            <div className="flex-1">
-                              <h3 className="font-semibold text-gray-900">
-                                {match.username}
-                              </h3>
-                              <p className="text-sm text-gray-600 mb-2">
-                                {match.email}
-                              </p>
-                              {match.skills && match.skills.length > 0 && (
-                                <div className="flex flex-wrap gap-1 mb-3">
-                                  {match.skills.map((skill, index) => (
-                                    <span
-                                      key={index}
-                                      className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full"
-                                    >
-                                      {skill}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                              <div className="flex space-x-2">
-                                <Button
-                                  onClick={() => handleAcceptMatch(match._id)}
-                                  size="sm"
-                                  className="flex items-center space-x-1"
-                                >
-                                  <UserCheck className="h-4 w-4" />
-                                  <span>Accept</span>
-                                </Button>
-                                <Button
-                                  onClick={() => handleRejectMatch(match._id)}
-                                  variant="outline"
-                                  size="sm"
-                                  className="flex items-center space-x-1"
-                                >
-                                  <UserX className="h-4 w-4" />
-                                  <span>Reject</span>
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
+                  <div className="text-center py-8">
+                    <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600">No mentees yet.</p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Start connecting with mentees in the Discover tab!
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Mentors Section - For Mentees */}
+          {activeTab === 'mentors' && isMentee && (
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Users className="h-5 w-5" />
+                    <span>My Mentors</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-8">
+                    <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600">No mentors yet.</p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Start connecting with mentors in the Discover tab!
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
             </div>

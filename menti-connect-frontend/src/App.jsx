@@ -4,6 +4,8 @@ import ProtectedRoute from './components/layout/ProtectedRoute';
 import Navbar from './components/layout/Navbar';
 import HomePage from './pages/HomePage';
 import DashboardPage from './pages/DashboardPage';
+import DiscoveryPage from './pages/DiscoveryPage';
+import AuthCallbackPage from './pages/AuthCallbackPage';
 
 function App() {
   return (
@@ -13,11 +15,20 @@ function App() {
           <Navbar />
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
             <Route
               path="/dashboard"
               element={
                 <ProtectedRoute>
                   <DashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/discover"
+              element={
+                <ProtectedRoute>
+                  <DiscoveryPage />
                 </ProtectedRoute>
               }
             />

@@ -33,3 +33,75 @@ exports.fetchUserPRs = async (userId) => {
         throw error;
     }
 };
+
+// Analyze user's GitHub activity for AI matching
+exports.analyzeUserActivity = async (userId) => {
+    try {
+        const user = await User.findById(userId);
+        if (!user || !user.githubAccessToken) {
+            throw new Error('User or GitHub token not found.');
+        }
+
+        // Get user's repositories
+        const reposResponse = await axios.get('https://api.github.com/user/repos', {
+            headers: {
+                'Authorization': `token ${user.githubAccessToken}`,
+                'Accept': 'application/vnd.github.v3+json'
+            },
+            params: {
+                sort: 'updated',
+                per_page: 10
+            }
+        });
+
+        // Analyze repositories for skills
+        const languages = {};
+        let totalCommits = 0;
+        
+        for (const repo of reposResponse.data) {
+            if (repo.language) {
+                languages[repo.language] = (languages[repo.language] || 0) + 1;
+            }
+            totalCommits += repo.size || 0;
+        }
+
+        // Get recent activity
+        const activityResponse = await axios.get('https://api.github.com/search/issues', {
+            params: {
+                q: `is:pr author:${user.username} is:public created:>2024-01-01`,
+                sort: 'created',
+                order: 'desc',
+            },
+            headers: {
+                'Authorization': `token ${user.githubAccessToken}`,
+                'Accept': 'application/vnd.github.v3+json',
+            },
+        });
+
+        const recentPRs = activityResponse.data.items.length;
+        const topLanguages = Object.entries(languages)
+            .sort(([,a], [,b]) => b - a)
+            .slice(0, 5)
+            .map(([lang]) => lang);
+
+        return {
+            totalRepos: reposResponse.data.length,
+            totalCommits,
+            languages: topLanguages,
+            activityLevel: recentPRs > 10 ? 'high' : recentPRs > 5 ? 'medium' : 'low',
+            recentPRs,
+            openSourceContributions: activityResponse.data.items.filter(pr => 
+                !pr.repository_url.includes(user.username)
+            ).length,
+            skillIndicators: {
+                frontend: topLanguages.includes('JavaScript') || topLanguages.includes('TypeScript') ? 85 : 0,
+                backend: topLanguages.includes('Python') || topLanguages.includes('Java') ? 70 : 0,
+                devops: topLanguages.includes('Docker') || topLanguages.includes('YAML') ? 45 : 0,
+                testing: recentPRs > 5 ? 60 : 30
+            }
+        };
+    } catch (error) {
+        console.error('Error analyzing GitHub activity:', error);
+        return null;
+    }
+};

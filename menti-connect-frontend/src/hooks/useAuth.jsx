@@ -57,17 +57,22 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
+    console.log('useAuth logout called');
     try {
       // Call backend logout endpoint to clear GitHub token
+      console.log('Calling backend logout endpoint...');
       await apiClient.post('/auth/logout');
+      console.log('Backend logout successful');
     } catch (error) {
       console.error('Logout error:', error);
       // Continue with frontend logout even if backend call fails
     } finally {
+      console.log('Clearing frontend auth state...');
       setUser(null);
       setToken(null);
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      console.log('Frontend logout complete');
     }
   };
 

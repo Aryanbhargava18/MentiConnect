@@ -2,9 +2,23 @@ import { useAuth } from '../hooks/useAuth.jsx';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Github, Users, Code, Heart, ArrowRight } from 'lucide-react';
+import { Navigate } from 'react-router-dom';
 
 const HomePage = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
+
+  // Redirect authenticated users to dashboard
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleGitHubLogin = () => {
     window.location.href = 'http://localhost:5001/auth/github';

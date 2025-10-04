@@ -13,10 +13,14 @@ const AuthCallbackPage = () => {
         // Get token from URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get('token');
+        
+        console.log('AuthCallbackPage: Token received:', token ? 'Yes' : 'No');
+        console.log('AuthCallbackPage: Full URL:', window.location.href);
 
         if (token) {
           // Store token and fetch user data
           localStorage.setItem('token', token);
+          setStatus('Fetching user data...');
           
           // Fetch user data from backend
           const response = await fetch('http://localhost:5001/api/users/me', {
@@ -26,22 +30,27 @@ const AuthCallbackPage = () => {
             },
           });
 
+          console.log('AuthCallbackPage: API response status:', response.status);
+
           if (response.ok) {
             const userData = await response.json();
+            console.log('AuthCallbackPage: User data received:', userData);
             login(userData, token);
             setStatus('Authentication successful! Redirecting...');
             setTimeout(() => {
               navigate('/dashboard');
             }, 1500);
           } else {
-            throw new Error('Failed to fetch user data');
+            const errorText = await response.text();
+            console.error('AuthCallbackPage: API error:', response.status, errorText);
+            throw new Error(`Failed to fetch user data: ${response.status}`);
           }
         } else {
           throw new Error('No token received');
         }
       } catch (error) {
         console.error('Auth callback error:', error);
-        setStatus('Authentication failed. Redirecting to home...');
+        setStatus(`Authentication failed: ${error.message}. Redirecting to home...`);
         setTimeout(() => {
           navigate('/');
         }, 2000);
