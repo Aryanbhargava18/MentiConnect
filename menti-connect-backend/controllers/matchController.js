@@ -27,6 +27,7 @@ exports.getMatches = async (req, res) => {
             res.status(200).json([]);
         }
     } catch (error) {
+        console.error('Error getting matches:', error);
         res.status(500).json({ message: 'Server Error' });
     }
 };
@@ -57,6 +58,7 @@ exports.acceptMatch = async (req, res) => {
 
         res.status(200).json({ message: 'Match accepted successfully!' });
     } catch (error) {
+        console.error('Error accepting match:', error);
         res.status(500).json({ message: 'Server Error' });
     }
 };

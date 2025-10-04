@@ -30,7 +30,20 @@ app.use('/api/matches', require('./routes/matchRoutes'));
 app.use('/api/github', require('./routes/githubRoutes'));
 
 app.get('/', (req, res) => {
-    res.send('Menti Connect API is running...');
+    res.json({ 
+        message: 'Menti Connect API is running...',
+        status: 'healthy',
+        version: '1.0.0'
+    });
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.status(200).json({ 
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
+    });
 });
 
 // Error Handler Middleware
