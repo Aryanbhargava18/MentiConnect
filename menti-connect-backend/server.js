@@ -28,6 +28,10 @@ app.use('/auth', require('./routes/authRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/matches', require('./routes/matchRoutes'));
 app.use('/api/github', require('./routes/githubRoutes'));
+app.use('/api/dashboard', require('./routes/dashboardRoutes'));
+app.use('/api/chat', require('./routes/chatRoutes'));
+app.use('/api/goals', require('./routes/goalRoutes'));
+app.use('/api/analytics', require('./routes/analyticsRoutes'));
 
 app.get('/', (req, res) => {
     res.json({ 

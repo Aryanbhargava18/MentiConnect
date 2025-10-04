@@ -17,6 +17,8 @@ const DashboardPage = () => {
   // Check if user needs to complete profile setup
   const needsProfileSetup = !user?.role || !user?.skills || user?.skills?.length === 0;
   
+  // Don't auto-redirect - let users stay on profile page to update their profile anytime
+  
   // Determine user type and what they're looking for
   const isMentor = user?.role === 'mentor' || user?.role === 'both';
   const isMentee = user?.role === 'mentee' || user?.role === 'both';
@@ -99,7 +101,7 @@ const DashboardPage = () => {
           )}
           {!needsProfileSetup && (
             <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-green-800 text-sm">
+              <p className="text-green-800 text-sm mb-3">
                 <strong>Ready to connect!</strong> {isMentor && isMentee 
                   ? 'As both mentor and mentee, you can find mentors to learn from and mentees to help.'
                   : isMentor 
@@ -107,6 +109,12 @@ const DashboardPage = () => {
                     : 'Find mentors who can help you grow and learn new skills.'
                 }
               </p>
+              <Button 
+                onClick={() => window.location.href = '/dashboard-v2'}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Go to Full Dashboard
+              </Button>
             </div>
           )}
         </div>
@@ -133,6 +141,14 @@ const DashboardPage = () => {
                 disabled={needsProfileSetup}
               >
                 Discover {lookingFor} {needsProfileSetup && <span className="ml-1 text-xs text-gray-400">(Complete profile first)</span>}
+              </button>
+              <button
+                onClick={() => window.location.href = '/dashboard-v2'}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Full Dashboard
               </button>
               {isMentor && (
                 <button

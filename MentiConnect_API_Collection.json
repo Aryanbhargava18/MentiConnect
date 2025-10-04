@@ -1,0 +1,454 @@
+{
+  "info": {
+    "name": "MentiConnect API Collection",
+    "description": "Complete API collection for MentiConnect SaaS Platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5001",
+      "type": "string"
+    },
+    {
+      "key": "jwtToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🔐 Authentication",
+      "item": [
+        {
+          "name": "GitHub OAuth Login",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/github",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "github"]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "👤 User Management",
+      "item": [
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me"]
+            }
+          }
+        },
+        {
+          "name": "Update User Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"mentor\",\n  \"skills\": [\"JavaScript\", \"React\", \"Node.js\", \"TypeScript\"],\n  \"mentoringCapacity\": 5,\n  \"availability\": [\"Mon 6-8pm\", \"Wed 7-9pm\", \"Fri 5-7pm\"],\n  \"bio\": \"Experienced full-stack developer\",\n  \"location\": \"San Francisco, CA\",\n  \"phone\": \"+1-555-123-4567\",\n  \"timezone\": \"UTC-8\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📊 Dashboard",
+      "item": [
+        {
+          "name": "Get Dashboard Data",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dashboard"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🎯 Goals Management",
+      "item": [
+        {
+          "name": "Get All Goals",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/goals",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "goals"]
+            }
+          }
+        },
+        {
+          "name": "Create New Goal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Master TypeScript\",\n  \"description\": \"Learn TypeScript from basics to advanced concepts\",\n  \"priority\": \"high\",\n  \"category\": \"skill_development\",\n  \"targetDate\": \"2024-03-01T00:00:00.000Z\",\n  \"skills\": [\"TypeScript\", \"JavaScript\", \"Type System\"],\n  \"milestones\": [\n    {\n      \"title\": \"Learn basic types\",\n      \"description\": \"Understand primitive types and interfaces\"\n    },\n    {\n      \"title\": \"Master generics\",\n      \"description\": \"Learn advanced generic patterns\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/goals",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "goals"]
+            }
+          }
+        },
+        {
+          "name": "Update Goal",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"progress\": 75,\n  \"status\": \"in_progress\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/goals/:goalId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "goals", ":goalId"]
+            }
+          }
+        },
+        {
+          "name": "Delete Goal",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/goals/:goalId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "goals", ":goalId"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "💬 Chat System",
+      "item": [
+        {
+          "name": "Get Conversations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/conversations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat", "conversations"]
+            }
+          }
+        },
+        {
+          "name": "Create Conversation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"participants\": [\"user_id_1\", \"user_id_2\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/conversations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat", "conversations"]
+            }
+          }
+        },
+        {
+          "name": "Get Messages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/messages/:conversationId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat", "messages", ":conversationId"]
+            }
+          }
+        },
+        {
+          "name": "Send Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Hello! How can I help you learn React?\",\n  \"conversationId\": \"conversation_id\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat", "messages"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔍 Matching System",
+      "item": [
+        {
+          "name": "Get Matches",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/matches",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "matches"]
+            }
+          }
+        },
+        {
+          "name": "Get AI Matches",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/matches/ai",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "matches", "ai"]
+            }
+          }
+        },
+        {
+          "name": "Accept Match",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/matches/accept/:matchId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "matches", "accept", ":matchId"]
+            }
+          }
+        },
+        {
+          "name": "Reject Match",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/matches/reject/:matchId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "matches", "reject", ":matchId"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📈 Analytics",
+      "item": [
+        {
+          "name": "Get GitHub Analytics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/github?range=30d",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics", "github"],
+              "query": [
+                {
+                  "key": "range",
+                  "value": "30d"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔧 Health Check",
+      "item": [
+        {
+          "name": "API Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "API Root",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

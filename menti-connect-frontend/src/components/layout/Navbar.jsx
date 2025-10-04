@@ -51,6 +51,50 @@ const Navbar = () => {
             {isAuthenticated ? (
               <>
                 <div className="flex items-center space-x-4">
+                  <nav className="flex items-center space-x-4">
+                    <a
+                      href="/dashboard"
+                      className="text-sm font-medium text-gray-700 hover:text-gray-900"
+                    >
+                      Dashboard
+                    </a>
+                    <a
+                      href="/profile"
+                      className="text-sm font-medium text-gray-700 hover:text-gray-900"
+                    >
+                      Profile
+                    </a>
+                    <a
+                      href="/discover"
+                      className="text-sm font-medium text-gray-700 hover:text-gray-900"
+                    >
+                      Discover
+                    </a>
+                    <a
+                      href="/chat"
+                      className="text-sm font-medium text-gray-700 hover:text-gray-900"
+                    >
+                      Messages
+                    </a>
+                    <a
+                      href="/goals"
+                      className="text-sm font-medium text-gray-700 hover:text-gray-900"
+                    >
+                      Goals
+                    </a>
+                    <a
+                      href="/analytics"
+                      className="text-sm font-medium text-gray-700 hover:text-gray-900"
+                    >
+                      Analytics
+                    </a>
+                    <a
+                      href="/settings"
+                      className="text-sm font-medium text-gray-700 hover:text-gray-900"
+                    >
+                      Settings
+                    </a>
+                  </nav>
                   <div className="flex items-center space-x-2">
                     <img
                       src={user?.avatarUrl}
@@ -112,6 +156,50 @@ const Navbar = () => {
                       {user?.username}
                     </span>
                   </div>
+                  <nav className="flex flex-col space-y-1">
+                    <a
+                      href="/dashboard"
+                      className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md"
+                    >
+                      Dashboard
+                    </a>
+                    <a
+                      href="/profile"
+                      className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md"
+                    >
+                      Profile
+                    </a>
+                    <a
+                      href="/discover"
+                      className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md"
+                    >
+                      Discover
+                    </a>
+                    <a
+                      href="/chat"
+                      className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md"
+                    >
+                      Messages
+                    </a>
+                    <a
+                      href="/goals"
+                      className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md"
+                    >
+                      Goals
+                    </a>
+                    <a
+                      href="/analytics"
+                      className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md"
+                    >
+                      Analytics
+                    </a>
+                    <a
+                      href="/settings"
+                      className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md"
+                    >
+                      Settings
+                    </a>
+                  </nav>
                   <Button
                     variant="outline"
                     size="sm"

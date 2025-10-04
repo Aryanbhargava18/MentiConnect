@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MentiConnect Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        .status {
+            display: flex;
+            align-items: center;
+            margin: 0.5rem 0;
+        }
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            background: #10b981;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+        .button {
+            background: #3b82f6;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 1rem;
+        }
+        .button:hover {
+            background: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 MentiConnect is Working!</h1>
+        <p>This is a simple HTML test to verify the system is working.</p>
+        
+        <div class="status">
+            <div class="status-dot"></div>
+            <span>HTML: ✅ Working</span>
+        </div>
+        <div class="status">
+            <div class="status-dot"></div>
+            <span>CSS: ✅ Working</span>
+        </div>
+        <div class="status">
+            <div class="status-dot"></div>
+            <span>JavaScript: ✅ Working</span>
+        </div>
+        
+        <button class="button" onclick="testFunction()">Test JavaScript</button>
+        
+        <div id="result" style="margin-top: 1rem; color: #10b981; font-weight: bold;"></div>
+    </div>
+
+    <script>
+        function testFunction() {
+            document.getElementById('result').innerHTML = '✅ JavaScript is working perfectly!';
+            console.log('JavaScript test successful!');
+        }
+        
+        console.log('HTML page loaded successfully!');
+    </script>
+</body>
+</html>

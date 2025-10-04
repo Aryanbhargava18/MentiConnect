@@ -4,7 +4,13 @@ import ProtectedRoute from './components/layout/ProtectedRoute';
 import Navbar from './components/layout/Navbar';
 import HomePage from './pages/HomePage';
 import DashboardPage from './pages/DashboardPage';
+import DashboardMain from './pages/DashboardMain';
+import ProfilePage from './pages/ProfilePage';
+import SettingsPage from './pages/SettingsPage';
 import DiscoveryPage from './pages/DiscoveryPage';
+import AnalyticsPage from './pages/AnalyticsPage';
+import ChatPage from './pages/ChatPage';
+import GoalsPage from './pages/GoalsPage';
 import AuthCallbackPage from './pages/AuthCallbackPage';
 
 function App() {
@@ -20,7 +26,23 @@ function App() {
               path="/dashboard"
               element={
                 <ProtectedRoute>
-                  <DashboardPage />
+                  <DashboardMain />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <ProfilePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <SettingsPage />
                 </ProtectedRoute>
               }
             />
@@ -29,6 +51,30 @@ function App() {
               element={
                 <ProtectedRoute>
                   <DiscoveryPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analytics"
+              element={
+                <ProtectedRoute>
+                  <AnalyticsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/chat"
+              element={
+                <ProtectedRoute>
+                  <ChatPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/goals"
+              element={
+                <ProtectedRoute>
+                  <GoalsPage />
                 </ProtectedRoute>
               }
             />

@@ -1,34 +1,61 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import apiClient from '../../api/apiClient';
-import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { User, Code, Users, Calendar, Save } from 'lucide-react';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Textarea } from '../ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { PlusCircle, XCircle, User } from 'lucide-react';
 
 const UpdateProfileForm = () => {
   const { user, updateUser } = useAuth();
   const [formData, setFormData] = useState({
-    role: user?.role || 'mentee',
+    role: user?.role || '',
     skills: user?.skills || [],
     mentoringCapacity: user?.mentoringCapacity || 0,
     availability: user?.availability || [],
   });
+  const [newSkill, setNewSkill] = useState('');
+  const [newAvailability, setNewAvailability] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  const handleInputChange = (e) => {
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        role: user.role || '',
+        skills: user.skills || [],
+        mentoringCapacity: user.mentoringCapacity || 0,
+        availability: user.availability || [],
+      });
+    }
+  }, [user]);
+
+  const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleArrayInputChange = (field, value) => {
-    const items = value.split(',').map(item => item.trim()).filter(item => item);
-    setFormData(prev => ({
+  const handleSelectChange = (name, value) => {
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleAddItem = (field, newItem, setter) => {
+    if (newItem.trim() && !formData[field].includes(newItem.trim())) {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: [...prev[field], newItem.trim()],
+      }));
+      setter('');
+    }
+  };
+
+  const handleRemoveItem = (field, itemToRemove) => {
+    setFormData((prev) => ({
       ...prev,
-      [field]: items
+      [field]: prev[field].filter((item) => item !== itemToRemove),
     }));
   };
 
@@ -40,11 +67,11 @@ const UpdateProfileForm = () => {
     try {
       const response = await apiClient.put('/api/users/me', formData);
       updateUser(response.data);
-      setMessage('Profile updated successfully! Redirecting to discover matches...');
+      setMessage('Profile updated successfully! Redirecting to dashboard...');
       
-      // Redirect to discover page after successful update
+      // Redirect to new dashboard after successful update
       setTimeout(() => {
-        window.location.href = '/discover';
+        window.location.href = '/dashboard-v2';
       }, 1500);
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -72,62 +99,108 @@ const UpdateProfileForm = () => {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Role
-            </label>
-            <select
+            <Label htmlFor="role">Role</Label>
+            <Select
               name="role"
               value={formData.role}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onValueChange={(value) => handleSelectChange('role', value)}
             >
-              <option value="mentee">Mentee</option>
-              <option value="mentor">Mentor</option>
-              <option value="both">Both</option>
-            </select>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select your role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mentee">Mentee</SelectItem>
+                <SelectItem value="mentor">Mentor</SelectItem>
+                <SelectItem value="both">Both (Mentor & Mentee)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Skills (comma-separated)
-            </label>
-            <input
-              type="text"
-              value={formData.skills.join(', ')}
-              onChange={(e) => handleArrayInputChange('skills', e.target.value)}
-              placeholder="e.g., React, Node.js, Python, Design"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <Label htmlFor="skills">Skills</Label>
+            <div className="flex space-x-2 mb-2">
+              <Input
+                type="text"
+                id="newSkill"
+                value={newSkill}
+                onChange={(e) => setNewSkill(e.target.value)}
+                placeholder="Add a skill (e.g., React, Node.js)"
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                onClick={() => handleAddItem('skills', newSkill, setNewSkill)}
+                variant="outline"
+                size="icon"
+              >
+                <PlusCircle className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {formData.skills.map((skill, index) => (
+                <span
+                  key={index}
+                  className="flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
+                >
+                  {skill}
+                  <XCircle
+                    className="ml-2 h-4 w-4 cursor-pointer text-blue-600 hover:text-blue-800"
+                    onClick={() => handleRemoveItem('skills', skill)}
+                  />
+                </span>
+              ))}
+            </div>
           </div>
 
-          {formData.role === 'mentor' || formData.role === 'both' ? (
+          {formData.role && (formData.role === 'mentor' || formData.role === 'both') && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Mentoring Capacity
-              </label>
-              <input
+              <Label htmlFor="mentoringCapacity">Mentoring Capacity</Label>
+              <Input
                 type="number"
+                id="mentoringCapacity"
                 name="mentoringCapacity"
                 value={formData.mentoringCapacity}
-                onChange={handleInputChange}
+                onChange={handleChange}
+                placeholder="Number of mentees you can mentor"
                 min="0"
-                max="10"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-          ) : null}
+          )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Availability (comma-separated)
-            </label>
-            <input
-              type="text"
-              value={formData.availability.join(', ')}
-              onChange={(e) => handleArrayInputChange('availability', e.target.value)}
-              placeholder="e.g., Mon 5-7pm, Wed 6-8pm, Sat 10am-12pm"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <Label htmlFor="availability">Availability</Label>
+            <div className="flex space-x-2 mb-2">
+              <Input
+                type="text"
+                id="newAvailability"
+                value={newAvailability}
+                onChange={(e) => setNewAvailability(e.target.value)}
+                placeholder="e.g., Mon 5-7pm, Wed 6-8pm"
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                onClick={() => handleAddItem('availability', newAvailability, setNewAvailability)}
+                variant="outline"
+                size="icon"
+              >
+                <PlusCircle className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {formData.availability.map((slot, index) => (
+                <span
+                  key={index}
+                  className="flex items-center bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm"
+                >
+                  {slot}
+                  <XCircle
+                    className="ml-2 h-4 w-4 cursor-pointer text-green-600 hover:text-green-800"
+                    onClick={() => handleRemoveItem('availability', slot)}
+                  />
+                </span>
+              ))}
+            </div>
           </div>
 
           {message && (
@@ -143,10 +216,10 @@ const UpdateProfileForm = () => {
                   <div className="mt-2">
                     <button
                       type="button"
-                      onClick={() => window.location.href = '/discover'}
+                      onClick={() => window.location.href = '/dashboard-v2'}
                       className="text-blue-600 hover:text-blue-800 underline text-sm"
                     >
-                      Start discovering matches →
+                      Go to Dashboard →
                     </button>
                   </div>
                 </div>
@@ -159,17 +232,7 @@ const UpdateProfileForm = () => {
             disabled={loading}
             className="w-full"
           >
-            {loading ? (
-              <div className="flex items-center space-x-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                <span>Updating...</span>
-              </div>
-            ) : (
-              <div className="flex items-center space-x-2">
-                <Save className="h-4 w-4" />
-                <span>Update Profile</span>
-              </div>
-            )}
+            {loading ? 'Updating...' : 'Update Profile'}
           </Button>
         </form>
       </CardContent>
