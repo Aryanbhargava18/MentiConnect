@@ -15,3 +15,21 @@ exports.githubCallback = (req, res) => {
     // Redirect to frontend with token in URL
     res.redirect(`${process.env.FRONTEND_URL}/dashboard?token=${token}`);
 };
+
+// @desc    Logout user (clear GitHub token)
+// @route   POST /auth/logout
+exports.logout = async (req, res) => {
+    try {
+        // Clear GitHub access token from user record
+        if (req.user && req.user.id) {
+            const User = require('../models/User');
+            await User.findByIdAndUpdate(req.user.id, { 
+                $unset: { githubAccessToken: 1 } 
+            });
+        }
+        res.status(200).json({ message: 'Logged out successfully' });
+    } catch (error) {
+        console.error('Logout error:', error);
+        res.status(500).json({ message: 'Server error during logout' });
+    }
+};

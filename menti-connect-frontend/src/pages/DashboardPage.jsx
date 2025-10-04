@@ -13,12 +13,12 @@ const DashboardPage = () => {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
 
-  // Handle token from URL (GitHub OAuth callback)
+  // Handle token from URL (GitHub OAuth callback) - only if not already authenticated
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
     
-    if (token && !user) {
+    if (token && !user && !localStorage.getItem('token')) {
       // Store token and fetch user data
       localStorage.setItem('token', token);
       
@@ -32,6 +32,8 @@ const DashboardPage = () => {
         } catch (error) {
           console.error('Error fetching user data:', error);
           localStorage.removeItem('token');
+          // Redirect to home if authentication fails
+          window.location.href = '/';
         }
       };
       
@@ -47,7 +49,10 @@ const DashboardPage = () => {
     } catch (error) {
       console.error('Error fetching matches:', error);
       if (error.response?.status === 401) {
-        // Token expired, redirect to login
+        // Token expired or GitHub access revoked, redirect to login
+        if (error.response?.data?.code === 'GITHUB_TOKEN_INVALID') {
+          alert('Your GitHub access has been revoked. Please re-authenticate.');
+        }
         window.location.href = '/';
       }
     } finally {

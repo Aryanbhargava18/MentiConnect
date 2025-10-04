@@ -30,11 +30,17 @@ export const AuthProvider = ({ children }) => {
           setUser(response.data);
           localStorage.setItem('user', JSON.stringify(response.data));
         } catch (error) {
+          console.error('Auth initialization error:', error);
           // Token is invalid, clear storage
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           setToken(null);
           setUser(null);
+          
+          // If it's a GitHub token issue, show specific message
+          if (error.response?.data?.code === 'GITHUB_TOKEN_INVALID') {
+            console.warn('GitHub access has been revoked');
+          }
         }
       }
       setLoading(false);
@@ -50,11 +56,19 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('user', JSON.stringify(userData));
   };
 
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+  const logout = async () => {
+    try {
+      // Call backend logout endpoint to clear GitHub token
+      await apiClient.post('/auth/logout');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Continue with frontend logout even if backend call fails
+    } finally {
+      setUser(null);
+      setToken(null);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
   };
 
   const updateUser = (updatedUser) => {

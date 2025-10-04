@@ -28,6 +28,11 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      // Check if it's a GitHub token issue
+      if (error.response?.data?.code === 'GITHUB_TOKEN_INVALID') {
+        // Show specific message for GitHub token issues
+        alert('Your GitHub access has been revoked. Please re-authenticate with GitHub.');
+      }
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/';

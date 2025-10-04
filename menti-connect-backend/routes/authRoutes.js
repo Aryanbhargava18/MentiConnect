@@ -2,6 +2,7 @@
 const express = require('express');
 const passport = require('passport');
 const authController = require('../controllers/authController');
+const { protect } = require('../middleware/authMiddleware');
 const router = express.Router();
 
 // @desc    Auth with GitHub
@@ -15,5 +16,9 @@ router.get(
     passport.authenticate('github', { session: false, failureRedirect: '/' }),
     authController.githubCallback
 );
+
+// @desc    Logout user
+// @route   POST /auth/logout
+router.post('/logout', protect, authController.logout);
 
 module.exports = router;
