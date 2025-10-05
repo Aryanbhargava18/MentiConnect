@@ -1,52 +1,67 @@
-// controllers/goalController.js
 const Goal = require('../models/Goal');
 const User = require('../models/User');
-const notificationService = require('../services/notificationService');
 
-// @desc    Get user goals
+// @desc    Get all goals for a user
 // @route   GET /api/goals
 exports.getGoals = async (req, res) => {
   try {
-    const goals = await Goal.find({ userId: req.user.id })
+    const userId = req.user.id;
+    const { status, category } = req.query;
+
+    let query = { user: userId };
+    if (status) query.status = status;
+    if (category) query.category = category;
+
+    const goals = await Goal.find(query)
       .populate('mentor', 'username avatarUrl')
       .sort({ createdAt: -1 });
 
     res.status(200).json(goals);
   } catch (error) {
-    console.error('Get goals error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error fetching goals:', error);
+    res.status(500).json({ message: 'Failed to fetch goals' });
   }
 };
 
-// @desc    Create new goal
+// @desc    Create a new goal
 // @route   POST /api/goals
 exports.createGoal = async (req, res) => {
   try {
-    const goalData = {
-      ...req.body,
-      userId: req.user.id
-    };
+    const { title, description, category, priority, targetDate, milestones, tags, mentor } = req.body;
+    const userId = req.user.id;
 
-    const goal = new Goal(goalData);
+    const goal = new Goal({
+      user: userId,
+      title,
+      description,
+      category,
+      priority,
+      targetDate,
+      milestones,
+      tags,
+      mentor
+    });
+
     await goal.save();
     await goal.populate('mentor', 'username avatarUrl');
 
     res.status(201).json(goal);
   } catch (error) {
-    console.error('Create goal error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error creating goal:', error);
+    res.status(500).json({ message: 'Failed to create goal' });
   }
 };
 
-// @desc    Update goal
-// @route   PUT /api/goals/:id
+// @desc    Update a goal
+// @route   PUT /api/goals/:goalId
 exports.updateGoal = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { goalId } = req.params;
+    const userId = req.user.id;
     const updates = req.body;
 
     const goal = await Goal.findOneAndUpdate(
-      { _id: id, userId: req.user.id },
+      { _id: goalId, user: userId },
       updates,
       { new: true }
     ).populate('mentor', 'username avatarUrl');
@@ -55,28 +70,21 @@ exports.updateGoal = async (req, res) => {
       return res.status(404).json({ message: 'Goal not found' });
     }
 
-    // Check if goal was completed
-    if (updates.status === 'completed' && goal.status === 'completed') {
-      await notificationService.sendGoalAchievement(req.user.id, goal.title);
-    }
-
     res.status(200).json(goal);
   } catch (error) {
-    console.error('Update goal error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error updating goal:', error);
+    res.status(500).json({ message: 'Failed to update goal' });
   }
 };
 
-// @desc    Delete goal
-// @route   DELETE /api/goals/:id
+// @desc    Delete a goal
+// @route   DELETE /api/goals/:goalId
 exports.deleteGoal = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { goalId } = req.params;
+    const userId = req.user.id;
 
-    const goal = await Goal.findOneAndDelete({
-      _id: id,
-      userId: req.user.id
-    });
+    const goal = await Goal.findOneAndDelete({ _id: goalId, user: userId });
 
     if (!goal) {
       return res.status(404).json({ message: 'Goal not found' });
@@ -84,100 +92,46 @@ exports.deleteGoal = async (req, res) => {
 
     res.status(200).json({ message: 'Goal deleted successfully' });
   } catch (error) {
-    console.error('Delete goal error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error deleting goal:', error);
+    res.status(500).json({ message: 'Failed to delete goal' });
   }
 };
 
-// @desc    Add milestone to goal
-// @route   POST /api/goals/:id/milestones
-exports.addMilestone = async (req, res) => {
+// @desc    Update goal progress
+// @route   PUT /api/goals/:goalId/progress
+exports.updateProgress = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { title, description } = req.body;
+    const { goalId } = req.params;
+    const { progress, milestoneIndex } = req.body;
+    const userId = req.user.id;
 
-    const goal = await Goal.findOneAndUpdate(
-      { _id: id, userId: req.user.id },
-      {
-        $push: {
-          milestones: {
-            title,
-            description
-          }
-        }
-      },
-      { new: true }
-    ).populate('mentor', 'username avatarUrl');
-
+    const goal = await Goal.findOne({ _id: goalId, user: userId });
     if (!goal) {
       return res.status(404).json({ message: 'Goal not found' });
     }
 
-    res.status(200).json(goal);
-  } catch (error) {
-    console.error('Add milestone error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
+    goal.progress = progress;
 
-// @desc    Update milestone
-// @route   PUT /api/goals/:id/milestones/:milestoneId
-exports.updateMilestone = async (req, res) => {
-  try {
-    const { id, milestoneId } = req.params;
-    const updates = req.body;
-
-    const goal = await Goal.findOneAndUpdate(
-      { _id: id, userId: req.user.id, 'milestones._id': milestoneId },
-      {
-        $set: {
-          'milestones.$.title': updates.title,
-          'milestones.$.description': updates.description,
-          'milestones.$.completed': updates.completed,
-          'milestones.$.completedAt': updates.completed ? new Date() : null
-        }
-      },
-      { new: true }
-    ).populate('mentor', 'username avatarUrl');
-
-    if (!goal) {
-      return res.status(404).json({ message: 'Goal or milestone not found' });
+    // Update milestone if provided
+    if (milestoneIndex !== undefined && goal.milestones[milestoneIndex]) {
+      goal.milestones[milestoneIndex].completed = true;
+      goal.milestones[milestoneIndex].completedAt = new Date();
     }
 
-    res.status(200).json(goal);
-  } catch (error) {
-    console.error('Update milestone error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-// @desc    Add achievement to goal
-// @route   POST /api/goals/:id/achievements
-exports.addAchievement = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { title, description } = req.body;
-
-    const goal = await Goal.findOneAndUpdate(
-      { _id: id, userId: req.user.id },
-      {
-        $push: {
-          achievements: {
-            title,
-            description
-          }
-        }
-      },
-      { new: true }
-    ).populate('mentor', 'username avatarUrl');
-
-    if (!goal) {
-      return res.status(404).json({ message: 'Goal not found' });
+    // Update status based on progress
+    if (progress === 100) {
+      goal.status = 'completed';
+      goal.completedDate = new Date();
+    } else if (progress > 0) {
+      goal.status = 'in_progress';
     }
 
+    await goal.save();
+    await goal.populate('mentor', 'username avatarUrl');
+
     res.status(200).json(goal);
   } catch (error) {
-    console.error('Add achievement error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error updating progress:', error);
+    res.status(500).json({ message: 'Failed to update progress' });
   }
 };

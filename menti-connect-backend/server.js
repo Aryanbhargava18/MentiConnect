@@ -31,6 +31,7 @@ app.use('/api/github', require('./routes/githubRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/chat', require('./routes/chatRoutes'));
 app.use('/api/goals', require('./routes/goalRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/analytics', require('./routes/analyticsRoutes'));
 
 app.get('/', (req, res) => {

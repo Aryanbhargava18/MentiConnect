@@ -1,13 +1,12 @@
-// models/Message.js
 const mongoose = require('mongoose');
 
 const messageSchema = new mongoose.Schema({
-  sender: {
+  conversation: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: 'Conversation',
     required: true
   },
-  receiver: {
+  sender: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
@@ -15,53 +14,27 @@ const messageSchema = new mongoose.Schema({
   content: {
     type: String,
     required: true,
-    maxlength: 2000
+    trim: true
   },
-  type: {
+  messageType: {
     type: String,
     enum: ['text', 'image', 'file', 'system'],
     default: 'text'
   },
-  read: {
+  isRead: {
     type: Boolean,
     default: false
   },
   readAt: {
-    type: Date,
-    default: null
+    type: Date
   },
-  edited: {
-    type: Boolean,
-    default: false
-  },
-  editedAt: {
-    type: Date,
-    default: null
-  },
-  deleted: {
-    type: Boolean,
-    default: false
-  },
-  deletedAt: {
-    type: Date,
-    default: null
-  },
-  attachments: [{
-    filename: String,
-    url: String,
-    size: Number,
-    mimeType: String
-  }],
-  replyTo: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Message',
-    default: null
+  metadata: {
+    fileName: String,
+    fileSize: Number,
+    fileType: String,
+    fileUrl: String
   }
 }, { timestamps: true });
-
-// Index for efficient queries
-messageSchema.index({ sender: 1, receiver: 1, createdAt: -1 });
-messageSchema.index({ receiver: 1, read: 1 });
 
 const Message = mongoose.model('Message', messageSchema);
 module.exports = Message;

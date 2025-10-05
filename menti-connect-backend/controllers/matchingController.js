@@ -1,137 +1,35 @@
-// controllers/matchingController.js
+// controllers/matchController.js
 const User = require('../models/User');
+const Match = require('../models/Match');
+const { getAIMatches, createMatch } = require('../services/aiMatchingService');
+const { createNotificationHelper } = require('./notificationController');
 const { analyzeUserActivity } = require('../services/githubService');
 
-// @desc    Get potential matches based on user role and skills
+// @desc    Get potential matches for the logged-in user
 // @route   GET /api/matches
 exports.getMatches = async (req, res) => {
     try {
         const currentUser = req.user;
-        const { role, skills } = currentUser;
         
-        // Determine what type of users to find
-        let targetRoles = [];
-        if (role === 'mentor') {
-            targetRoles = ['mentee', 'both'];
-        } else if (role === 'mentee') {
-            targetRoles = ['mentor', 'both'];
-        } else if (role === 'both') {
-            targetRoles = ['mentor', 'mentee', 'both'];
-        }
-
-        // Find users with target roles and skills
-        let query = {
-            _id: { $ne: currentUser._id }, // Exclude current user
-            role: { $in: targetRoles },
-            skills: { $exists: true, $ne: [] }
-        };
-
-        // If user has skills, find users with matching skills
-        if (skills && skills.length > 0) {
-            query.skills = { $in: skills };
-        }
-
-        const matches = await User.find(query)
-            .select('-githubAccessToken -__v')
-            .limit(20);
-
-        // Sort by skill match count (basic matching algorithm)
-        const sortedMatches = matches.sort((a, b) => {
-            const aSkillMatches = a.skills ? a.skills.filter(skill => 
-                currentUser.skills && currentUser.skills.includes(skill)
-            ).length : 0;
-            const bSkillMatches = b.skills ? b.skills.filter(skill => 
-                currentUser.skills && currentUser.skills.includes(skill)
-            ).length : 0;
-            return bSkillMatches - aSkillMatches;
-        });
-
-        res.status(200).json(sortedMatches);
+        // Get AI-powered matches
+        const matches = await getAIMatches(currentUser._id);
+        
+        res.status(200).json(matches);
     } catch (error) {
-        console.error('Error fetching matches:', error);
+        console.error('Error getting matches:', error);
         res.status(500).json({ message: 'Failed to fetch matches' });
     }
 };
 
-// @desc    Get AI-powered matches based on GitHub activity and skills
+// @desc    Get AI-powered matches
 // @route   GET /api/matches/ai
 exports.getAIMatches = async (req, res) => {
     try {
         const currentUser = req.user;
-        const { role, skills } = currentUser;
-        
-        // This is where we'll integrate AI matching in the future
-        // For now, return enhanced matches with GitHub activity analysis
-        
-        // Determine what type of users to find
-        let targetRoles = [];
-        if (role === 'mentor') {
-            targetRoles = ['mentee', 'both'];
-        } else if (role === 'mentee') {
-            targetRoles = ['mentor', 'both'];
-        } else if (role === 'both') {
-            targetRoles = ['mentor', 'mentee', 'both'];
-        }
-
-        // Find users with target roles
-        const matches = await User.find({
-            _id: { $ne: currentUser._id },
-            role: { $in: targetRoles },
-            skills: { $exists: true, $ne: [] }
-        })
-        .select('-githubAccessToken -__v')
-        .limit(20);
-
-        // Enhanced matching algorithm with GitHub analysis
-        const enhancedMatches = await Promise.all(matches.map(async (match) => {
-            const skillMatches = match.skills ? match.skills.filter(skill => 
-                currentUser.skills && currentUser.skills.includes(skill)
-            ).length : 0;
-            
-            const totalSkills = match.skills ? match.skills.length : 0;
-            const baseMatchScore = totalSkills > 0 ? (skillMatches / totalSkills) * 100 : 0;
-            
-            // Get GitHub activity analysis for better matching
-            let githubInsights = null;
-            try {
-                githubInsights = await analyzeUserActivity(match._id);
-            } catch (error) {
-                console.log('Could not analyze GitHub activity for user:', match.username);
-            }
-            
-            // Calculate enhanced match score with GitHub data
-            let enhancedScore = baseMatchScore;
-            if (githubInsights) {
-                // Boost score based on GitHub activity
-                const activityBoost = githubInsights.activityLevel === 'high' ? 10 : 
-                                    githubInsights.activityLevel === 'medium' ? 5 : 0;
-                enhancedScore = Math.min(100, baseMatchScore + activityBoost);
-            }
-            
-            return {
-                ...match.toObject(),
-                matchScore: Math.round(enhancedScore),
-                skillMatches: skillMatches,
-                aiInsights: {
-                    compatibilityScore: enhancedScore,
-                    recommendedSkills: match.skills ? match.skills.slice(0, 3) : [],
-                    githubActivity: githubInsights ? {
-                        activityLevel: githubInsights.activityLevel,
-                        languages: githubInsights.languages,
-                        recentPRs: githubInsights.recentPRs,
-                        openSourceContributions: githubInsights.openSourceContributions
-                    } : null,
-                    // Future: Add more AI insights based on GitHub data
-                }
-            };
-        }));
-
-        // Sort by match score
-        const sortedMatches = enhancedMatches.sort((a, b) => b.matchScore - a.matchScore);
-
-        res.status(200).json(sortedMatches);
+        const matches = await getAIMatches(currentUser._id);
+        res.status(200).json(matches);
     } catch (error) {
-        console.error('Error fetching AI matches:', error);
+        console.error('Error getting AI matches:', error);
         res.status(500).json({ message: 'Failed to fetch AI matches' });
     }
 };
@@ -143,24 +41,115 @@ exports.acceptMatch = async (req, res) => {
         const { matchId } = req.params;
         const currentUser = req.user;
         
-        // Add the match to user's accepted matches
-        const updatedUser = await User.findByIdAndUpdate(
+        // Validate matchId
+        if (!matchId || matchId === currentUser._id.toString()) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Invalid match ID' 
+            });
+        }
+
+        // Check if already connected
+        if (currentUser.acceptedMatches.includes(matchId)) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Already connected with this user' 
+            });
+        }
+
+        // Get the target user to check their capacity
+        const targetUser = await User.findById(matchId);
+        if (!targetUser) {
+            return res.status(404).json({ 
+                success: false,
+                message: 'User not found' 
+            });
+        }
+
+        // Check if target user has capacity (for mentors)
+        if (targetUser.role === 'mentor' && targetUser.acceptedMatches.length >= targetUser.mentoringCapacity) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'This mentor has reached their capacity limit' 
+            });
+        }
+        
+        // Add the match to both users' accepted matches
+        const [updatedCurrentUser, updatedTargetUser] = await Promise.all([
+            User.findByIdAndUpdate(
+                currentUser._id,
+                { $addToSet: { acceptedMatches: matchId } },
+                { new: true }
+            ),
+            User.findByIdAndUpdate(
+                matchId,
+                { $addToSet: { acceptedMatches: currentUser._id } },
+                { new: true }
+            )
+        ]);
+
+        if (!updatedCurrentUser || !updatedTargetUser) {
+            return res.status(500).json({ 
+                success: false,
+                message: 'Failed to update connection' 
+            });
+        }
+
+        // Create match record
+        const matchRecord = await createMatch(
             currentUser._id,
-            { $addToSet: { acceptedMatches: matchId } },
-            { new: true }
+            matchId,
+            85, // Default match score
+            {
+                compatibilityScore: 85,
+                factors: { skills: 30, availability: 20, experience: 15, goals: 10, github: 10 },
+                recommendations: ['Great match! Start your mentorship journey.']
+            }
         );
 
-        if (!updatedUser) {
-            return res.status(404).json({ message: 'User not found' });
+        // Send notifications
+        try {
+            await createNotificationHelper(
+                currentUser._id,
+                'match',
+                'New Connection!',
+                `You've successfully connected with ${targetUser.username}`,
+                { matchId: matchRecord._id }
+            );
+            
+            await createNotificationHelper(
+                matchId,
+                'match',
+                'New Connection!',
+                `${currentUser.username} wants to connect with you`,
+                { matchId: matchRecord._id }
+            );
+        } catch (notificationError) {
+            console.error('Notification error:', notificationError);
+            // Don't fail the connection if notification fails
         }
 
         res.status(200).json({ 
-            message: 'Match accepted successfully',
-            acceptedMatches: updatedUser.acceptedMatches 
+            success: true,
+            message: 'Match accepted successfully!',
+            connection: {
+                currentUser: {
+                    id: updatedCurrentUser._id,
+                    username: updatedCurrentUser.username,
+                    acceptedMatches: updatedCurrentUser.acceptedMatches
+                },
+                targetUser: {
+                    id: updatedTargetUser._id,
+                    username: updatedTargetUser.username
+                }
+            }
         });
     } catch (error) {
         console.error('Error accepting match:', error);
-        res.status(500).json({ message: 'Failed to accept match' });
+        res.status(500).json({ 
+            success: false,
+            message: 'Failed to accept match' 
+        });
     }
 };
 
@@ -171,6 +160,22 @@ exports.rejectMatch = async (req, res) => {
         const { matchId } = req.params;
         const currentUser = req.user;
         
+        // Validate matchId
+        if (!matchId || matchId === currentUser._id.toString()) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Invalid match ID' 
+            });
+        }
+
+        // Check if already rejected
+        if (currentUser.rejectedMatches.includes(matchId)) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Already rejected this user' 
+            });
+        }
+        
         // Add the match to user's rejected matches
         const updatedUser = await User.findByIdAndUpdate(
             currentUser._id,
@@ -179,15 +184,22 @@ exports.rejectMatch = async (req, res) => {
         );
 
         if (!updatedUser) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(404).json({ 
+                success: false,
+                message: 'User not found' 
+            });
         }
 
         res.status(200).json({ 
+            success: true,
             message: 'Match rejected successfully',
             rejectedMatches: updatedUser.rejectedMatches 
         });
     } catch (error) {
         console.error('Error rejecting match:', error);
-        res.status(500).json({ message: 'Failed to reject match' });
+        res.status(500).json({ 
+            success: false,
+            message: 'Failed to reject match' 
+        });
     }
 };

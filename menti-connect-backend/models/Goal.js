@@ -1,8 +1,7 @@
-// models/Goal.js
 const mongoose = require('mongoose');
 
 const goalSchema = new mongoose.Schema({
-  userId: {
+  user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
@@ -10,28 +9,20 @@ const goalSchema = new mongoose.Schema({
   title: {
     type: String,
     required: true,
-    maxlength: 200
+    trim: true
   },
   description: {
     type: String,
-    maxlength: 1000
+    trim: true
   },
   category: {
     type: String,
-    enum: [
-      'skill_development',
-      'career_advancement',
-      'project_completion',
-      'learning',
-      'networking',
-      'certification',
-      'other'
-    ],
+    enum: ['learning', 'career', 'project', 'skill', 'personal'],
     required: true
   },
   priority: {
     type: String,
-    enum: ['low', 'medium', 'high', 'urgent'],
+    enum: ['low', 'medium', 'high'],
     default: 'medium'
   },
   status: {
@@ -46,75 +37,23 @@ const goalSchema = new mongoose.Schema({
     default: 0
   },
   targetDate: {
-    type: Date,
-    required: true
+    type: Date
   },
-  completedAt: {
-    type: Date,
-    default: null
+  completedDate: {
+    type: Date
   },
   milestones: [{
     title: String,
     description: String,
-    completed: {
-      type: Boolean,
-      default: false
-    },
+    completed: Boolean,
     completedAt: Date
   }],
-  skills: [{
-    type: String
-  }],
+  tags: [String],
   mentor: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    default: null
-  },
-  mentorNotes: [{
-    note: String,
-    createdAt: {
-      type: Date,
-      default: Date.now
-    },
-    createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    }
-  }],
-  achievements: [{
-    title: String,
-    description: String,
-    achievedAt: {
-      type: Date,
-      default: Date.now
-    },
-    verified: {
-      type: Boolean,
-      default: false
-    },
-    verifiedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    }
-  }],
-  tags: [{
-    type: String
-  }],
-  isPublic: {
-    type: Boolean,
-    default: false
-  },
-  visibility: {
-    type: String,
-    enum: ['private', 'mentor_only', 'public'],
-    default: 'private'
+    ref: 'User'
   }
 }, { timestamps: true });
-
-// Index for efficient queries
-goalSchema.index({ userId: 1, status: 1, targetDate: 1 });
-goalSchema.index({ category: 1, isPublic: 1 });
-goalSchema.index({ mentor: 1, status: 1 });
 
 const Goal = mongoose.model('Goal', goalSchema);
 module.exports = Goal;

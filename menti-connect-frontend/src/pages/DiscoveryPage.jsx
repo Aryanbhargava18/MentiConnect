@@ -26,6 +26,9 @@ const DiscoveryPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [skillFilter, setSkillFilter] = useState('');
   const [sortBy, setSortBy] = useState('matchScore'); // matchScore, recent, activity
+  const [connectingUsers, setConnectingUsers] = useState(new Set());
+  const [connectionStatus, setConnectionStatus] = useState({});
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   // Determine user type and what they're looking for
   const isMentor = user?.role === 'mentor' || user?.role === 'both';
@@ -35,7 +38,7 @@ const DiscoveryPage = () => {
   const fetchMatches = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.get('/api/matches/ai');
+      const response = await apiClient.get('/api/matches');
       setMatches(response.data);
       setFilteredMatches(response.data);
     } catch (error) {
@@ -51,21 +54,119 @@ const DiscoveryPage = () => {
     }
   };
 
-  const handleAcceptMatch = async (matchId) => {
+  const handleAcceptMatch = async (matchId, event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    // Prevent multiple clicks
+    if (connectingUsers.has(matchId)) return;
+    
+    setConnectingUsers(prev => new Set(prev).add(matchId));
+    setConnectionStatus(prev => ({ ...prev, [matchId]: 'connecting' }));
+    
     try {
-      await apiClient.post(`/api/matches/accept/${matchId}`);
-      fetchMatches(); // Refresh matches
+      const response = await apiClient.post(`/api/matches/accept/${matchId}`);
+      console.log('Match accepted:', response.data);
+      
+      if (response.data.success) {
+        // Update connection status
+        setConnectionStatus(prev => ({ ...prev, [matchId]: 'connected' }));
+        
+        // Show success message
+        setShowSuccessMessage(true);
+        setTimeout(() => setShowSuccessMessage(false), 3000);
+        
+        // Remove the accepted match from the list after a short delay
+        setTimeout(() => {
+          setMatches(prev => prev.filter(match => match._id !== matchId));
+          setFilteredMatches(prev => prev.filter(match => match._id !== matchId));
+          setConnectionStatus(prev => {
+            const newStatus = { ...prev };
+            delete newStatus[matchId];
+            return newStatus;
+          });
+        }, 1500);
+      } else {
+        throw new Error(response.data.message || 'Connection failed');
+      }
+      
     } catch (error) {
       console.error('Error accepting match:', error);
+      setConnectionStatus(prev => ({ ...prev, [matchId]: 'error' }));
+      
+      // Show error message
+      alert(error.response?.data?.message || error.message || 'Failed to connect. Please try again.');
+      
+      // Reset error status after 3 seconds
+      setTimeout(() => {
+        setConnectionStatus(prev => {
+          const newStatus = { ...prev };
+          delete newStatus[matchId];
+          return newStatus;
+        });
+      }, 3000);
+    } finally {
+      setConnectingUsers(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(matchId);
+        return newSet;
+      });
     }
   };
 
-  const handleRejectMatch = async (matchId) => {
+  const handleRejectMatch = async (matchId, event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    // Prevent multiple clicks
+    if (connectingUsers.has(matchId)) return;
+    
+    setConnectingUsers(prev => new Set(prev).add(matchId));
+    setConnectionStatus(prev => ({ ...prev, [matchId]: 'rejecting' }));
+    
     try {
-      await apiClient.post(`/api/matches/reject/${matchId}`);
-      fetchMatches(); // Refresh matches
+      const response = await apiClient.post(`/api/matches/reject/${matchId}`);
+      console.log('Match rejected:', response.data);
+      
+      if (response.data.success) {
+        // Update connection status
+        setConnectionStatus(prev => ({ ...prev, [matchId]: 'rejected' }));
+        
+        // Remove the rejected match from the list after a short delay
+        setTimeout(() => {
+          setMatches(prev => prev.filter(match => match._id !== matchId));
+          setFilteredMatches(prev => prev.filter(match => match._id !== matchId));
+          setConnectionStatus(prev => {
+            const newStatus = { ...prev };
+            delete newStatus[matchId];
+            return newStatus;
+          });
+        }, 1000);
+      } else {
+        throw new Error(response.data.message || 'Rejection failed');
+      }
+      
     } catch (error) {
       console.error('Error rejecting match:', error);
+      setConnectionStatus(prev => ({ ...prev, [matchId]: 'error' }));
+      
+      // Show error message
+      alert(error.response?.data?.message || error.message || 'Failed to pass. Please try again.');
+      
+      // Reset error status after 3 seconds
+      setTimeout(() => {
+        setConnectionStatus(prev => {
+          const newStatus = { ...prev };
+          delete newStatus[matchId];
+          return newStatus;
+        });
+      }, 3000);
+    } finally {
+      setConnectingUsers(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(matchId);
+        return newSet;
+      });
     }
   };
 
@@ -116,8 +217,28 @@ const DiscoveryPage = () => {
   // Get unique skills from all matches for filter dropdown
   const allSkills = [...new Set(matches.flatMap(match => match.skills || []))];
 
+  // Get button status for a specific match
+  const getButtonStatus = (matchId) => {
+    const status = connectionStatus[matchId];
+    const isConnecting = connectingUsers.has(matchId);
+    
+    if (isConnecting) return 'loading';
+    if (status === 'connected') return 'success';
+    if (status === 'rejected') return 'rejected';
+    if (status === 'error') return 'error';
+    return 'default';
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Success Message */}
+      {showSuccessMessage && (
+        <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2">
+          <UserCheck className="h-5 w-5" />
+          <span>Successfully connected!</span>
+        </div>
+      )}
+      
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -349,23 +470,84 @@ const DiscoveryPage = () => {
 
                   {/* Action Buttons */}
                   <div className="flex space-x-2 pt-4 border-t border-gray-200">
-                    <Button
-                      onClick={() => handleAcceptMatch(match._id)}
-                      size="sm"
-                      className="flex-1 flex items-center justify-center space-x-2"
-                    >
-                      <UserCheck className="h-4 w-4" />
-                      <span>Connect</span>
-                    </Button>
-                    <Button
-                      onClick={() => handleRejectMatch(match._id)}
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 flex items-center justify-center space-x-2"
-                    >
-                      <UserX className="h-4 w-4" />
-                      <span>Pass</span>
-                    </Button>
+                    {(() => {
+                      const buttonStatus = getButtonStatus(match._id);
+                      const isConnecting = connectingUsers.has(match._id);
+                      
+                      return (
+                        <>
+                          <Button
+                            onClick={(e) => handleAcceptMatch(match._id, e)}
+                            disabled={isConnecting}
+                            size="sm"
+                            className={`flex-1 flex items-center justify-center space-x-2 ${
+                              buttonStatus === 'success' 
+                                ? 'bg-green-500 hover:bg-green-600' 
+                                : buttonStatus === 'error'
+                                ? 'bg-red-500 hover:bg-red-600'
+                                : ''
+                            }`}
+                          >
+                            {buttonStatus === 'loading' ? (
+                              <>
+                                <RefreshCw className="h-4 w-4 animate-spin" />
+                                <span>Connecting...</span>
+                              </>
+                            ) : buttonStatus === 'success' ? (
+                              <>
+                                <UserCheck className="h-4 w-4" />
+                                <span>Connected!</span>
+                              </>
+                            ) : buttonStatus === 'error' ? (
+                              <>
+                                <UserX className="h-4 w-4" />
+                                <span>Failed</span>
+                              </>
+                            ) : (
+                              <>
+                                <UserCheck className="h-4 w-4" />
+                                <span>Connect</span>
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            onClick={(e) => handleRejectMatch(match._id, e)}
+                            disabled={isConnecting}
+                            variant="outline"
+                            size="sm"
+                            className={`flex-1 flex items-center justify-center space-x-2 ${
+                              buttonStatus === 'rejected' 
+                                ? 'border-red-500 text-red-500' 
+                                : buttonStatus === 'error'
+                                ? 'border-red-500 text-red-500'
+                                : ''
+                            }`}
+                          >
+                            {buttonStatus === 'loading' ? (
+                              <>
+                                <RefreshCw className="h-4 w-4 animate-spin" />
+                                <span>Passing...</span>
+                              </>
+                            ) : buttonStatus === 'rejected' ? (
+                              <>
+                                <UserX className="h-4 w-4" />
+                                <span>Passed</span>
+                              </>
+                            ) : buttonStatus === 'error' ? (
+                              <>
+                                <UserX className="h-4 w-4" />
+                                <span>Error</span>
+                              </>
+                            ) : (
+                              <>
+                                <UserX className="h-4 w-4" />
+                                <span>Pass</span>
+                              </>
+                            )}
+                          </Button>
+                        </>
+                      );
+                    })()}
                   </div>
                 </CardContent>
               </Card>

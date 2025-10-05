@@ -1,25 +1,14 @@
-// models/Notification.js
 const mongoose = require('mongoose');
 
 const notificationSchema = new mongoose.Schema({
-  userId: {
+  user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
   type: {
     type: String,
-    enum: [
-      'match_request',
-      'match_accepted',
-      'match_rejected',
-      'message_received',
-      'meeting_scheduled',
-      'goal_achieved',
-      'skill_verified',
-      'feedback_received',
-      'system_announcement'
-    ],
+    enum: ['match', 'message', 'goal_reminder', 'achievement', 'system'],
     required: true
   },
   title: {
@@ -30,28 +19,25 @@ const notificationSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  data: {
-    type: mongoose.Schema.Types.Mixed,
-    default: {}
-  },
-  read: {
+  isRead: {
     type: Boolean,
     default: false
   },
+  readAt: {
+    type: Date
+  },
+  data: {
+    matchId: mongoose.Schema.Types.ObjectId,
+    conversationId: mongoose.Schema.Types.ObjectId,
+    goalId: mongoose.Schema.Types.ObjectId,
+    actionUrl: String
+  },
   priority: {
     type: String,
-    enum: ['low', 'medium', 'high', 'urgent'],
+    enum: ['low', 'medium', 'high'],
     default: 'medium'
-  },
-  expiresAt: {
-    type: Date,
-    default: null
   }
 }, { timestamps: true });
-
-// Index for efficient queries
-notificationSchema.index({ userId: 1, read: 1, createdAt: -1 });
-notificationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 const Notification = mongoose.model('Notification', notificationSchema);
 module.exports = Notification;

@@ -42,6 +42,28 @@ export const AuthProvider = ({ children }) => {
             console.warn('GitHub access has been revoked');
           }
         }
+      } else {
+        // For development: create a test user if none exists
+        try {
+          console.log('No stored auth, creating test user...');
+          const response = await apiClient.post('/api/users/test', {
+            username: 'Test User',
+            email: 'test@example.com',
+            role: 'mentee',
+            skills: ['JavaScript', 'React'],
+            availability: ['weekends']
+          });
+          
+          if (response.data.token && response.data.user) {
+            setToken(response.data.token);
+            setUser(response.data.user);
+            localStorage.setItem('token', response.data.token);
+            localStorage.setItem('user', JSON.stringify(response.data.user));
+            console.log('Test user created and logged in');
+          }
+        } catch (error) {
+          console.error('Error creating test user:', error);
+        }
       }
       setLoading(false);
     };

@@ -33,15 +33,19 @@ import {
 } from 'lucide-react';
 
 const DashboardMain = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
 
+  console.log('DashboardMain render:', { user, authLoading });
+
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
+      console.log('Fetching dashboard data...');
       const response = await apiClient.get('/api/dashboard');
+      console.log('Dashboard data received:', response.data);
       setDashboardData(response.data);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -98,12 +102,26 @@ const DashboardMain = () => {
     </Card>
   );
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Authentication Required</h1>
+          <p className="text-gray-600 mb-4">Please log in to access the dashboard.</p>
+          <Button onClick={() => window.location.href = '/'}>
+            Go to Login
+          </Button>
         </div>
       </div>
     );
