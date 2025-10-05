@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MentiConnect Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+        .loading { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>MentiConnect Frontend Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Backend Health Check</h2>
+        <div id="health-status" class="loading">Checking...</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Create Test User</h2>
+        <div id="user-status" class="loading">Creating...</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Test Dashboard API</h2>
+        <div id="dashboard-status" class="loading">Testing...</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Test Analytics API</h2>
+        <div id="analytics-status" class="loading">Testing...</div>
+    </div>
+
+    <script>
+        let authToken = '';
+        
+        async function testBackend() {
+            try {
+                const response = await fetch('http://localhost:5001/health');
+                const data = await response.json();
+                document.getElementById('health-status').innerHTML = 
+                    `<span class="success">✅ Backend is healthy: ${data.status}</span>`;
+                return true;
+            } catch (error) {
+                document.getElementById('health-status').innerHTML = 
+                    `<span class="error">❌ Backend error: ${error.message}</span>`;
+                return false;
+            }
+        }
+        
+        async function createTestUser() {
+            try {
+                const response = await fetch('http://localhost:5001/api/users/test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: 'Test User',
+                        email: 'test@example.com',
+                        role: 'mentee',
+                        skills: ['JavaScript', 'React'],
+                        availability: ['weekends']
+                    })
+                });
+                const data = await response.json();
+                authToken = data.token;
+                document.getElementById('user-status').innerHTML = 
+                    `<span class="success">✅ Test user created: ${data.user.username}</span>`;
+                return true;
+            } catch (error) {
+                document.getElementById('user-status').innerHTML = 
+                    `<span class="error">❌ User creation error: ${error.message}</span>`;
+                return false;
+            }
+        }
+        
+        async function testDashboard() {
+            try {
+                const response = await fetch('http://localhost:5001/api/dashboard', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                document.getElementById('dashboard-status').innerHTML = 
+                    `<span class="success">✅ Dashboard working: ${data.activeMatches} matches, ${data.goalsProgress}% goals</span>`;
+                return true;
+            } catch (error) {
+                document.getElementById('dashboard-status').innerHTML = 
+                    `<span class="error">❌ Dashboard error: ${error.message}</span>`;
+                return false;
+            }
+        }
+        
+        async function testAnalytics() {
+            try {
+                const response = await fetch('http://localhost:5001/api/analytics', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                document.getElementById('analytics-status').innerHTML = 
+                    `<span class="success">✅ Analytics working: ${data.totalCommits} commits, ${data.languages.length} languages</span>`;
+                return true;
+            } catch (error) {
+                document.getElementById('analytics-status').innerHTML = 
+                    `<span class="error">❌ Analytics error: ${error.message}</span>`;
+                return false;
+            }
+        }
+        
+        async function runTests() {
+            const backendOk = await testBackend();
+            if (!backendOk) return;
+            
+            const userOk = await createTestUser();
+            if (!userOk) return;
+            
+            await testDashboard();
+            await testAnalytics();
+        }
+        
+        runTests();
+    </script>
+</body>
+</html>

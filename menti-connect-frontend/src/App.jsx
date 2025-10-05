@@ -5,6 +5,8 @@ import Navbar from './components/layout/Navbar';
 import HomePage from './pages/HomePage';
 import DashboardPage from './pages/DashboardPage';
 import DashboardMain from './pages/DashboardMain';
+import DashboardDebug from './pages/DashboardDebug';
+import DashboardSimple from './pages/DashboardSimple';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import DiscoveryPage from './pages/DiscoveryPage';
@@ -26,7 +28,7 @@ function App() {
               path="/dashboard"
               element={
                 <ProtectedRoute>
-                  <DashboardMain />
+                  <DashboardSimple />
                 </ProtectedRoute>
               }
             />

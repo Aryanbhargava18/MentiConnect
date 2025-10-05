@@ -107,6 +107,29 @@ exports.acceptMatch = async (req, res) => {
             }
         );
 
+        // Create a conversation between the matched users
+        try {
+            const Conversation = require('../models/Conversation');
+            const existingConversation = await Conversation.findOne({
+                participants: { $all: [currentUser._id, matchId] }
+            });
+
+            if (!existingConversation) {
+                const conversation = new Conversation({
+                    participants: [currentUser._id, matchId],
+                    conversationType: 'mentorship',
+                    metadata: {
+                        mentorshipGoal: 'Professional development',
+                        startDate: new Date()
+                    }
+                });
+                await conversation.save();
+                console.log('Conversation created between users');
+            }
+        } catch (conversationError) {
+            console.error('Error creating conversation:', conversationError);
+        }
+
         // Send notifications
         try {
             await createNotificationHelper(
